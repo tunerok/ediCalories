@@ -1,6 +1,8 @@
 package com.example.edicalories.ui.today
 
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -12,6 +14,25 @@ fun formatEpochDay(epochDay: Long): String {
     return DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
         .withLocale(Locale.getDefault())
         .format(date)
+}
+
+fun formatYearMonth(yearMonth: YearMonth): String {
+    val raw = DateTimeFormatter.ofPattern("LLLL yyyy")
+        .withLocale(Locale.getDefault())
+        .format(yearMonth)
+    return raw.replaceFirstChar { char ->
+        if (char.isLowerCase()) {
+            char.titlecase(Locale.getDefault())
+        } else {
+            char.toString()
+        }
+    }
+}
+
+fun formatWeekdayShort(dayOfWeek: DayOfWeek): String {
+    return DateTimeFormatter.ofPattern("EE")
+        .withLocale(Locale.getDefault())
+        .format(dayOfWeek)
 }
 
 fun epochDayToUtcMillis(epochDay: Long): Long {

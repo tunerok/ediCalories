@@ -24,7 +24,7 @@ import kotlin.math.abs
 
 @Composable
 fun RemainingCard(
-    state: TodayUiState,
+    state: DaySnapshot,
     modifier: Modifier = Modifier,
 ) {
     val accent = if (state.isOver) {

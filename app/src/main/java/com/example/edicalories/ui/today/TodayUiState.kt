@@ -4,8 +4,8 @@ import com.example.edicalories.data.Meal
 import com.example.edicalories.domain.CalorieBalance
 import java.time.LocalDate
 
-data class TodayUiState(
-    val selectedEpochDay: Long = LocalDate.now().toEpochDay(),
+data class DaySnapshot(
+    val epochDay: Long = LocalDate.now().toEpochDay(),
     val dailyGoal: Int = CalorieBalance.DEFAULT_DAILY_GOAL,
     val meals: List<Meal> = emptyList(),
     val consumed: Int = 0,
@@ -15,6 +15,27 @@ data class TodayUiState(
 ) {
     val isOver: Boolean
         get() = remaining < 0
+}
+
+data class TodayUiState(
+    val previous: DaySnapshot = DaySnapshot(
+        epochDay = LocalDate.now().toEpochDay() - 1L,
+        isToday = false,
+    ),
+    val current: DaySnapshot = DaySnapshot(),
+    val next: DaySnapshot = DaySnapshot(
+        epochDay = LocalDate.now().toEpochDay() + 1L,
+        isToday = false,
+    ),
+) {
+    val selectedEpochDay: Long
+        get() = current.epochDay
+
+    val dailyGoal: Int
+        get() = current.dailyGoal
+
+    val isToday: Boolean
+        get() = current.isToday
 }
 
 sealed interface UserMessage {

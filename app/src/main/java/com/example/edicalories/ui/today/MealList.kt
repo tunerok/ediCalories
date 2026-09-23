@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
 import com.example.edicalories.data.Meal
+import com.example.edicalories.domain.MinutesOfDay
 
 @Composable
 fun MealList(
@@ -80,8 +82,15 @@ private fun MealRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val minutesOfDay = meal.minutesOfDay
+            val timeLabel = if (minutesOfDay != null) {
+                MinutesOfDay.format(minutesOfDay)
+            } else {
+                index.toString()
+            }
             Text(
-                text = index.toString(),
+                text = timeLabel,
+                modifier = Modifier.widthIn(min = 48.dp),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

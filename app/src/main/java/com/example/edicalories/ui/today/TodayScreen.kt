@@ -1,20 +1,17 @@
 package com.example.edicalories.ui.today
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -24,8 +21,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +53,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     var sheet by remember { mutableStateOf<TodaySheet>(TodaySheet.None) }
     var addMenuOpen by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
@@ -78,8 +77,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 TodayTopBar(
                     selectedEpochDay = state.selectedEpochDay,
                     isToday = state.isToday,
-                    onPreviousDay = viewModel::selectPreviousDay,
-                    onNextDay = viewModel::selectNextDay,
+                    onPickDate = { showDatePicker = true },
                     onToday = viewModel::selectToday,
                     onSettings = { sheet = TodaySheet.Settings },
                 )
@@ -97,33 +95,33 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 }
             },
         ) { innerPadding ->
-            Column(
+            DaySwipeContainer(
+                enabled = !addMenuOpen && sheet == TodaySheet.None && !showDatePicker,
+                selectedEpochDay = state.selectedEpochDay,
+                onPreviousDay = viewModel::selectPreviousDay,
+                onNextDay = viewModel::selectNextDay,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            ) {
-                RemainingCard(
-                    state = state,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-                Text(
-                    text = stringResource(R.string.meals_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                )
-                MealList(
-                    meals = state.meals,
-                    onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        top = 8.dp,
-                        end = 16.dp,
-                        bottom = 88.dp,
-                    ),
-                )
-            }
+                previous = {
+                    DayPage(
+                        snapshot = state.previous,
+                        onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
+                    )
+                },
+                current = {
+                    DayPage(
+                        snapshot = state.current,
+                        onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
+                    )
+                },
+                next = {
+                    DayPage(
+                        snapshot = state.next,
+                        onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
+                    )
+                },
+            )
         }
 
         QuickAddOverlay(
@@ -145,6 +143,26 @@ fun TodayScreen(viewModel: TodayViewModel) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
+        )
+    }
+
+    if (showDatePicker) {
+        val dayTotals by viewModel.calendarDayTotals.collectAsStateWithLifecycle()
+        DisposableEffect(Unit) {
+            onDispose {
+                viewModel.stopObservingCalendar()
+            }
+        }
+        DayCalendarDialog(
+            selectedEpochDay = state.selectedEpochDay,
+            dailyGoal = state.dailyGoal,
+            dayTotals = dayTotals,
+            onVisibleRangeChange = viewModel::observeCalendarRange,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { epochDay ->
+                viewModel.selectEpochDay(epochDay)
+                showDatePicker = false
+            },
         )
     }
 
@@ -182,41 +200,57 @@ fun TodayScreen(viewModel: TodayViewModel) {
     }
 }
 
+@Composable
+private fun DayPage(
+    snapshot: DaySnapshot,
+    onMealClick: (Meal) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemainingCard(
+            state = snapshot,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        )
+        Text(
+            text = stringResource(R.string.meals_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
+        MealList(
+            meals = snapshot.meals,
+            onMealClick = onMealClick,
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 8.dp,
+                end = 16.dp,
+                bottom = 88.dp,
+            ),
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TodayTopBar(
     selectedEpochDay: Long,
     isToday: Boolean,
-    onPreviousDay: () -> Unit,
-    onNextDay: () -> Unit,
+    onPickDate: () -> Unit,
     onToday: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                IconButton(onClick = onPreviousDay) {
-                    Icon(
-                        imageVector = Icons.Filled.ChevronLeft,
-                        contentDescription = stringResource(R.string.previous_day),
-                    )
-                }
-                Text(
-                    text = formatEpochDay(selectedEpochDay),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                )
-                IconButton(onClick = onNextDay) {
-                    Icon(
-                        imageVector = Icons.Filled.ChevronRight,
-                        contentDescription = stringResource(R.string.next_day),
-                    )
-                }
-            }
+            Text(
+                text = formatEpochDay(selectedEpochDay),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.pick_date),
+                    onClick = onPickDate,
+                ),
+            )
         },
         actions = {
             if (!isToday) {

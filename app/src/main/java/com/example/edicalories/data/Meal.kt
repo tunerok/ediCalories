@@ -8,4 +8,5 @@ data class Meal(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val calories: Int,
     val epochDay: Long,
+    val minutesOfDay: Int? = null,
 )
