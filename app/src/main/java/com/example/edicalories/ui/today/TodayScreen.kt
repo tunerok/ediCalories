@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.edicalories.R
 import com.example.edicalories.data.Meal
+import com.example.edicalories.domain.AddMenuSave
 import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.JournalDocument
@@ -196,16 +197,15 @@ fun TodayScreen(viewModel: TodayViewModel) {
             onDismiss = { addMenuOpen = false },
             onQuickAdd = { calories ->
                 viewModel.addQuick(calories)
-                addMenuOpen = false
             },
-            onCustomSave = { caloriesRaw ->
-                viewModel.addCustom(caloriesRaw, state.selectedEpochDay)
-                if (CalorieBalance.parsePositiveCalories(caloriesRaw) != null) {
-                    addMenuOpen = false
-                }
-            },
-            onWeightSave = { weightRaw ->
-                viewModel.saveWeight(weightRaw, state.selectedEpochDay)
+            onSave = { caloriesRaw, weightRaw ->
+                saveAddMenu(
+                    caloriesRaw = caloriesRaw,
+                    weightRaw = weightRaw,
+                    epochDay = state.selectedEpochDay,
+                    viewModel = viewModel,
+                    onClose = { addMenuOpen = false },
+                )
             },
         )
         SnackbarHost(
@@ -376,6 +376,29 @@ private fun TodayTopBar(
             }
         },
     )
+}
+
+private fun saveAddMenu(
+    caloriesRaw: String,
+    weightRaw: String,
+    epochDay: Long,
+    viewModel: TodayViewModel,
+    onClose: () -> Unit,
+) {
+    when (val result = AddMenuSave.resolve(caloriesRaw, weightRaw)) {
+        AddMenuSave.Result.CloseEmpty -> onClose()
+        AddMenuSave.Result.InvalidCalories -> viewModel.addCustom(caloriesRaw, epochDay)
+        AddMenuSave.Result.InvalidWeight -> viewModel.saveWeight(weightRaw, epochDay)
+        is AddMenuSave.Result.Write -> {
+            if (result.calories != null) {
+                viewModel.addCustom(caloriesRaw, epochDay)
+            }
+            if (result.tenthsOfKg != null) {
+                viewModel.saveWeight(weightRaw, epochDay)
+            }
+            onClose()
+        }
+    }
 }
 
 private class DayMealListStateStore {

@@ -63,7 +63,6 @@
     <string name="current_weight">Current: %1$s kg</string>
     <string name="card_weight">Weight %1$s kg</string>
     <string name="weight_label">Weight, kg</string>
-    <string name="save_weight">Save weight</string>
     <string name="invalid_weight">Enter a weight from 20.0 to 400.0 kg</string>
     <string name="progress_title">Progress</string>
     <string name="progress_open">Progress charts</string>

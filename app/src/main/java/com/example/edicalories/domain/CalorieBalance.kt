@@ -6,6 +6,7 @@ object CalorieBalance {
     const val MIN_DAILY_GOAL: Int = 1
     const val MAX_DAILY_GOAL: Int = 20_000
     const val DEFAULT_DAILY_GOAL: Int = 1800
+    const val NEAR_GOAL_PERCENT: Int = 5
 
     fun consumed(calories: List<Int>): Int {
         var total = 0L
@@ -25,6 +26,16 @@ object CalorieBalance {
         }
         val ratio = consumed.toFloat() / dailyGoal.toFloat()
         return ratio.coerceIn(0f, 1f)
+    }
+
+    fun isNearGoal(dailyGoal: Int, consumed: Int): Boolean {
+        if (dailyGoal <= 0 || consumed < 0) {
+            return false
+        }
+        val margin = dailyGoal.toLong() * NEAR_GOAL_PERCENT.toLong() / 100L
+        val low = dailyGoal.toLong() - margin
+        val high = dailyGoal.toLong() + margin
+        return consumed.toLong() in low..high
     }
 
     fun parsePositiveCalories(raw: String): Int? {

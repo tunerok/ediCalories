@@ -1,5 +1,6 @@
 package com.example.edicalories.ui.today
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
 import com.example.edicalories.domain.BodyWeight
+import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.ui.theme.ExactYellow
+import com.example.edicalories.ui.theme.ExactYellowLight
 import kotlin.math.abs
 
 @Composable
@@ -28,13 +32,14 @@ fun RemainingCard(
     state: DaySnapshot,
     modifier: Modifier = Modifier,
 ) {
-    val accent = if (state.isOver) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.primary
+    val nearGoal = CalorieBalance.isNearGoal(state.dailyGoal, state.consumed)
+    val accent = when {
+        nearGoal -> if (isSystemInDarkTheme()) ExactYellowLight else ExactYellow
+        state.isOver -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
     }
     val statusLabel = when {
-        state.remaining == 0 -> stringResource(R.string.remaining_status_exact)
+        nearGoal -> stringResource(R.string.remaining_status_exact)
         state.isOver -> stringResource(R.string.remaining_status_over)
         else -> stringResource(R.string.remaining_status_left)
     }

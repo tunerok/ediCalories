@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -70,17 +72,26 @@ fun QuickAddOverlay(
     existingWeightTenths: Int?,
     onDismiss: () -> Unit,
     onQuickAdd: (Int) -> Unit,
-    onCustomSave: (String) -> Unit,
-    onWeightSave: (String) -> Unit,
+    onSave: (caloriesRaw: String, weightRaw: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BackHandler(enabled = visible, onBack = onDismiss)
 
     var caloriesRaw by remember { mutableStateOf("") }
     var weightRaw by remember { mutableStateOf("") }
+    var caloriesFocused by remember { mutableStateOf(false) }
     var weightFocused by remember { mutableStateOf(false) }
+    val caloriesSaveRequester = remember { BringIntoViewRequester() }
     val weightScrollState = rememberScrollState()
     val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(caloriesFocused, imeBottom, visible) {
+        if (!visible || !caloriesFocused) {
+            return@LaunchedEffect
+        }
+        snapshotFlow { weightScrollState.maxValue }.collect {
+            caloriesSaveRequester.bringIntoView()
+        }
+    }
     LaunchedEffect(weightFocused, imeBottom, visible) {
         if (!visible || !weightFocused) {
             return@LaunchedEffect
@@ -190,7 +201,12 @@ fun QuickAddOverlay(
                                 caloriesRaw = incoming.filter { char -> char.isDigit() }
                                     .take(CUSTOM_CALORIES_MAX_DIGITS)
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(caloriesSaveRequester)
+                                .onFocusChanged { focusState ->
+                                    caloriesFocused = focusState.isFocused
+                                },
                             label = { Text(stringResource(R.string.calories_label)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(
@@ -198,15 +214,9 @@ fun QuickAddOverlay(
                                 imeAction = ImeAction.Done,
                             ),
                             keyboardActions = KeyboardActions(
-                                onDone = { onCustomSave(caloriesRaw) },
+                                onDone = { onSave(caloriesRaw, weightRaw) },
                             ),
                         )
-                        Button(
-                            onClick = { onCustomSave(caloriesRaw) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(text = stringResource(R.string.save))
-                        }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
                             text = stringResource(
@@ -243,17 +253,17 @@ fun QuickAddOverlay(
                                 imeAction = ImeAction.Done,
                             ),
                             keyboardActions = KeyboardActions(
-                                onDone = { onWeightSave(weightRaw) },
+                                onDone = { onSave(caloriesRaw, weightRaw) },
                             ),
                         )
                     }
                     Button(
-                        onClick = { onWeightSave(weightRaw) },
+                        onClick = { onSave(caloriesRaw, weightRaw) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                     ) {
-                        Text(text = stringResource(R.string.save_weight))
+                        Text(text = stringResource(R.string.save))
                     }
                 }
             }

@@ -1,7 +1,9 @@
 package com.example.edicalories.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CalorieBalanceTest {
@@ -31,6 +33,17 @@ class CalorieBalanceTest {
         assertEquals(0.5f, CalorieBalance.progress(1800, 900), 0.0001f)
         assertEquals(1f, CalorieBalance.progress(1800, 2000), 0.0001f)
         assertEquals(0f, CalorieBalance.progress(0, 100), 0.0001f)
+    }
+
+    @Test
+    fun isNearGoal_acceptsFivePercentAroundTheGoal() {
+        assertTrue(CalorieBalance.isNearGoal(1800, 1710))
+        assertTrue(CalorieBalance.isNearGoal(1800, 1800))
+        assertTrue(CalorieBalance.isNearGoal(1800, 1890))
+        assertFalse(CalorieBalance.isNearGoal(1800, 1709))
+        assertFalse(CalorieBalance.isNearGoal(1800, 1891))
+        assertFalse(CalorieBalance.isNearGoal(1800, 0))
+        assertFalse(CalorieBalance.isNearGoal(0, 0))
     }
 
     @Test

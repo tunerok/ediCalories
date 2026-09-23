@@ -63,7 +63,6 @@
     <string name="current_weight">Сейчас: %1$s кг</string>
     <string name="card_weight">Вес %1$s кг</string>
     <string name="weight_label">Вес, кг</string>
-    <string name="save_weight">Сохранить вес</string>
     <string name="invalid_weight">Введите вес от 20.0 до 400.0 кг</string>
     <string name="progress_title">Прогресс</string>
     <string name="progress_open">Графики прогресса</string>
