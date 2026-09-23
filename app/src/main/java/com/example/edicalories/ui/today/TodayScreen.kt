@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.edicalories.R
 import com.example.edicalories.data.Meal
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.MealSchedule
 
 private sealed interface TodaySheet {
     data object None : TodaySheet
@@ -64,6 +65,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 UserMessage.Deleted -> context.getString(R.string.deleted)
                 UserMessage.InvalidCalories -> context.getString(R.string.invalid_calories)
                 UserMessage.InvalidGoal -> context.getString(R.string.invalid_goal)
+                UserMessage.InvalidMealWindows -> context.getString(R.string.invalid_meal_windows)
                 UserMessage.WriteError -> context.getString(R.string.write_error)
             }
             snackbarHostState.showSnackbar(text)
@@ -106,18 +108,21 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 previous = {
                     DayPage(
                         snapshot = state.previous,
+                        schedule = state.mealSchedule,
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
                 current = {
                     DayPage(
                         snapshot = state.current,
+                        schedule = state.mealSchedule,
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
                 next = {
                     DayPage(
                         snapshot = state.next,
+                        schedule = state.mealSchedule,
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
@@ -188,10 +193,13 @@ fun TodayScreen(viewModel: TodayViewModel) {
         TodaySheet.Settings -> {
             SettingsSheet(
                 currentGoal = state.dailyGoal,
+                currentSchedule = state.mealSchedule,
                 onDismiss = { sheet = TodaySheet.None },
-                onSave = { goalRaw ->
-                    viewModel.setDailyGoal(goalRaw)
-                    if (CalorieBalance.parseDailyGoal(goalRaw) != null) {
+                onSave = { goalRaw, schedule ->
+                    viewModel.saveSettings(goalRaw, schedule)
+                    val goalOk = CalorieBalance.parseDailyGoal(goalRaw) != null
+                    val windowsOk = !schedule.groupingEnabled || schedule.isValid()
+                    if (goalOk && windowsOk) {
                         sheet = TodaySheet.None
                     }
                 },
@@ -203,6 +211,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
 @Composable
 private fun DayPage(
     snapshot: DaySnapshot,
+    schedule: MealSchedule,
     onMealClick: (Meal) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -218,6 +227,7 @@ private fun DayPage(
         )
         MealList(
             meals = snapshot.meals,
+            schedule = schedule,
             onMealClick = onMealClick,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(

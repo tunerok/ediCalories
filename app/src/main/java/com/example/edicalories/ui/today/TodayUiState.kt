@@ -2,6 +2,7 @@ package com.example.edicalories.ui.today
 
 import com.example.edicalories.data.Meal
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.MealSchedule
 import java.time.LocalDate
 
 data class DaySnapshot(
@@ -27,6 +28,7 @@ data class TodayUiState(
         epochDay = LocalDate.now().toEpochDay() + 1L,
         isToday = false,
     ),
+    val mealSchedule: MealSchedule = MealSchedule.DEFAULT,
 ) {
     val selectedEpochDay: Long
         get() = current.epochDay
@@ -44,5 +46,6 @@ sealed interface UserMessage {
     data object Deleted : UserMessage
     data object InvalidCalories : UserMessage
     data object InvalidGoal : UserMessage
+    data object InvalidMealWindows : UserMessage
     data object WriteError : UserMessage
 }

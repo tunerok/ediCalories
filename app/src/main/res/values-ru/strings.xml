@@ -1,8 +1,9 @@
 <resources>
     <string name="app_name">ediCalories</string>
     <string name="daily_goal_label">Дневная норма</string>
-    <string name="remaining_left">Осталось %d</string>
-    <string name="remaining_over">Перебор на %d</string>
+    <string name="remaining_status_left">Осталось</string>
+    <string name="remaining_status_over">Перебор</string>
+    <string name="remaining_status_exact">Идеально</string>
     <string name="consumed_of_goal">%1$d из %2$d ккал</string>
     <string name="meals_title">Приёмы пищи</string>
     <string name="empty_day">Пока пусто. Откройте меню добавления, чтобы создать запись.</string>
@@ -40,4 +41,16 @@
     <string name="next_month">Следующий месяц</string>
     <string name="calendar_day_description">%1$s, %2$d ккал</string>
     <string name="daily_goal_hint">Калорий в день</string>
+    <string name="meal_list_mode_title">Список приёмов</string>
+    <string name="meal_list_mode_flat">Списком</string>
+    <string name="meal_list_mode_grouped">Завтрак, обед, ужин</string>
+    <string name="meal_slot_breakfast">Завтрак</string>
+    <string name="meal_slot_lunch">Обед</string>
+    <string name="meal_slot_dinner">Ужин</string>
+    <string name="meal_slot_untimed">Без времени</string>
+    <string name="breakfast_start">Начало завтрака</string>
+    <string name="lunch_start">Начало обеда</string>
+    <string name="dinner_start">Начало ужина</string>
+    <string name="pick_meal_window">Выберите время начала</string>
+    <string name="invalid_meal_windows">Завтрак, обед и ужин должны начинаться в этом порядке</string>
 </resources>

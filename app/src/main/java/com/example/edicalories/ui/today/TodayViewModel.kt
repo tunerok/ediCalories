@@ -8,6 +8,7 @@ import com.example.edicalories.data.Meal
 import com.example.edicalories.data.MealRepository
 import com.example.edicalories.data.PreferencesRepository
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -43,13 +44,15 @@ class TodayViewModel(
     val uiState: StateFlow<TodayUiState> = combine(
         mealsWindow,
         preferencesRepository.dailyGoal,
-    ) { window, dailyGoal ->
+        preferencesRepository.mealSchedule,
+    ) { window, dailyGoal, mealSchedule ->
         val grouped = window.meals.groupBy { meal -> meal.epochDay }
         val todayEpochDay = LocalDate.now().toEpochDay()
         TodayUiState(
             previous = snapshotFor(window.centerEpochDay - 1L, grouped, dailyGoal, todayEpochDay),
             current = snapshotFor(window.centerEpochDay, grouped, dailyGoal, todayEpochDay),
             next = snapshotFor(window.centerEpochDay + 1L, grouped, dailyGoal, todayEpochDay),
+            mealSchedule = mealSchedule,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -146,15 +149,19 @@ class TodayViewModel(
         }
     }
 
-    fun setDailyGoal(goalRaw: String) {
+    fun saveSettings(goalRaw: String, schedule: MealSchedule) {
         val goal = CalorieBalance.parseDailyGoal(goalRaw)
         if (goal == null) {
             emitMessage(UserMessage.InvalidGoal)
             return
         }
+        if (schedule.groupingEnabled && !schedule.isValid()) {
+            emitMessage(UserMessage.InvalidMealWindows)
+            return
+        }
         viewModelScope.launch {
             runCatching {
-                preferencesRepository.setDailyGoal(goal)
+                preferencesRepository.setDailyGoalAndSchedule(goal, schedule)
             }.onSuccess {
                 emitMessage(UserMessage.Saved)
             }.onFailure {

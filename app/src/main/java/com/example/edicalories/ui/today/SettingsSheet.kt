@@ -1,5 +1,6 @@
 package com.example.edicalories.ui.today
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,35 +9,61 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
+import com.example.edicalories.domain.MealSchedule
+import com.example.edicalories.domain.MinutesOfDay
+
+private enum class MealWindowField {
+    Breakfast,
+    Lunch,
+    Dinner,
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSheet(
     currentGoal: Int,
+    currentSchedule: MealSchedule,
     onDismiss: () -> Unit,
-    onSave: (goalRaw: String) -> Unit,
+    onSave: (goalRaw: String, schedule: MealSchedule) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var goalRaw by remember { mutableStateOf(currentGoal.toString()) }
+    var groupingEnabled by remember { mutableStateOf(currentSchedule.groupingEnabled) }
+    var breakfastStart by remember { mutableIntStateOf(currentSchedule.breakfastStart) }
+    var lunchStart by remember { mutableIntStateOf(currentSchedule.lunchStart) }
+    var dinnerStart by remember { mutableIntStateOf(currentSchedule.dinnerStart) }
+    var windowField by remember { mutableStateOf<MealWindowField?>(null) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -46,6 +73,7 @@ fun SettingsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 28.dp),
         ) {
@@ -65,6 +93,42 @@ fun SettingsSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
             Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = stringResource(R.string.meal_list_mode_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.selectableGroup()) {
+                MealListModeRow(
+                    label = stringResource(R.string.meal_list_mode_flat),
+                    selected = !groupingEnabled,
+                    onClick = { groupingEnabled = false },
+                )
+                MealListModeRow(
+                    label = stringResource(R.string.meal_list_mode_grouped),
+                    selected = groupingEnabled,
+                    onClick = { groupingEnabled = true },
+                )
+            }
+            if (groupingEnabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                MealWindowRow(
+                    label = stringResource(R.string.breakfast_start),
+                    minutesOfDay = breakfastStart,
+                    onClick = { windowField = MealWindowField.Breakfast },
+                )
+                MealWindowRow(
+                    label = stringResource(R.string.lunch_start),
+                    minutesOfDay = lunchStart,
+                    onClick = { windowField = MealWindowField.Lunch },
+                )
+                MealWindowRow(
+                    label = stringResource(R.string.dinner_start),
+                    minutesOfDay = dinnerStart,
+                    onClick = { windowField = MealWindowField.Dinner },
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -76,7 +140,17 @@ fun SettingsSheet(
                     Text(stringResource(R.string.cancel))
                 }
                 Button(
-                    onClick = { onSave(goalRaw) },
+                    onClick = {
+                        onSave(
+                            goalRaw,
+                            MealSchedule(
+                                groupingEnabled = groupingEnabled,
+                                breakfastStart = breakfastStart,
+                                lunchStart = lunchStart,
+                                dinnerStart = dinnerStart,
+                            ),
+                        )
+                    },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.save))
@@ -84,4 +158,114 @@ fun SettingsSheet(
             }
         }
     }
+
+    val editingField = windowField
+    if (editingField != null) {
+        val currentMinutes = when (editingField) {
+            MealWindowField.Breakfast -> breakfastStart
+            MealWindowField.Lunch -> lunchStart
+            MealWindowField.Dinner -> dinnerStart
+        }
+        MealWindowPickerDialog(
+            minutesOfDay = currentMinutes,
+            onDismiss = { windowField = null },
+            onConfirm = { minutes ->
+                when (editingField) {
+                    MealWindowField.Breakfast -> breakfastStart = minutes
+                    MealWindowField.Lunch -> lunchStart = minutes
+                    MealWindowField.Dinner -> dinnerStart = minutes
+                }
+                windowField = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun MealListModeRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton,
+            )
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null,
+        )
+        Text(
+            text = label,
+            modifier = Modifier.padding(start = 8.dp),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
+}
+
+@Composable
+private fun MealWindowRow(
+    label: String,
+    minutesOfDay: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = MinutesOfDay.format(minutesOfDay),
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MealWindowPickerDialog(
+    minutesOfDay: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (minutesOfDay: Int) -> Unit,
+) {
+    val safe = minutesOfDay.coerceIn(MinutesOfDay.MIN_INCLUSIVE, MinutesOfDay.MAX_INCLUSIVE)
+    val pickerState = rememberTimePickerState(
+        initialHour = safe / MinutesOfDay.MINUTES_PER_HOUR,
+        initialMinute = safe % MinutesOfDay.MINUTES_PER_HOUR,
+        is24Hour = true,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val minutes = (pickerState.hour * MinutesOfDay.MINUTES_PER_HOUR) + pickerState.minute
+                    onConfirm(minutes)
+                },
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+        title = { Text(stringResource(R.string.pick_meal_window)) },
+        text = { TimePicker(state = pickerState) },
+    )
 }

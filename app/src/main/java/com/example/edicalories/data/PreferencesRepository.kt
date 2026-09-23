@@ -3,10 +3,12 @@ package com.example.edicalories.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.MealSchedule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,14 +21,34 @@ class PreferencesRepository(context: Context) {
         preferences[DAILY_GOAL_KEY] ?: CalorieBalance.DEFAULT_DAILY_GOAL
     }
 
-    suspend fun setDailyGoal(goal: Int) {
+    val mealSchedule: Flow<MealSchedule> = dataStore.data.map { preferences ->
+        MealSchedule(
+            groupingEnabled = preferences[MEAL_GROUPING_ENABLED_KEY] ?: false,
+            breakfastStart = preferences[BREAKFAST_START_KEY] ?: MealSchedule.DEFAULT_BREAKFAST_START,
+            lunchStart = preferences[LUNCH_START_KEY] ?: MealSchedule.DEFAULT_LUNCH_START,
+            dinnerStart = preferences[DINNER_START_KEY] ?: MealSchedule.DEFAULT_DINNER_START,
+        )
+    }
+
+    suspend fun setDailyGoalAndSchedule(goal: Int, schedule: MealSchedule) {
         require(goal in CalorieBalance.MIN_DAILY_GOAL..CalorieBalance.MAX_DAILY_GOAL)
+        if (schedule.groupingEnabled) {
+            require(schedule.isValid())
+        }
         dataStore.edit { preferences ->
             preferences[DAILY_GOAL_KEY] = goal
+            preferences[MEAL_GROUPING_ENABLED_KEY] = schedule.groupingEnabled
+            preferences[BREAKFAST_START_KEY] = schedule.breakfastStart
+            preferences[LUNCH_START_KEY] = schedule.lunchStart
+            preferences[DINNER_START_KEY] = schedule.dinnerStart
         }
     }
 
     private companion object {
         val DAILY_GOAL_KEY = intPreferencesKey("daily_goal")
+        val MEAL_GROUPING_ENABLED_KEY = booleanPreferencesKey("meal_grouping_enabled")
+        val BREAKFAST_START_KEY = intPreferencesKey("breakfast_start_minutes")
+        val LUNCH_START_KEY = intPreferencesKey("lunch_start_minutes")
+        val DINNER_START_KEY = intPreferencesKey("dinner_start_minutes")
     }
 }

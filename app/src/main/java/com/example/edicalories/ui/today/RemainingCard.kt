@@ -32,12 +32,11 @@ fun RemainingCard(
     } else {
         MaterialTheme.colorScheme.primary
     }
-    val remainingLabel = if (state.isOver) {
-        stringResource(R.string.remaining_over, abs(state.remaining))
-    } else {
-        stringResource(R.string.remaining_left, state.remaining)
+    val statusLabel = when {
+        state.remaining == 0 -> stringResource(R.string.remaining_status_exact)
+        state.isOver -> stringResource(R.string.remaining_status_over)
+        else -> stringResource(R.string.remaining_status_left)
     }
-
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -64,6 +63,11 @@ fun RemainingCard(
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
+                        text = statusLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accent,
+                    )
+                    Text(
                         text = abs(state.remaining).toString(),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
@@ -77,12 +81,6 @@ fun RemainingCard(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = remainingLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = accent,
-                )
                 Text(
                     text = stringResource(
                         R.string.consumed_of_goal,
