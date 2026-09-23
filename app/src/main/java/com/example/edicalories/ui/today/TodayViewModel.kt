@@ -10,6 +10,7 @@ import com.example.edicalories.data.JournalRepository
 import com.example.edicalories.data.Meal
 import com.example.edicalories.data.MealRepository
 import com.example.edicalories.data.PreferencesRepository
+import com.example.edicalories.data.WeightEntry
 import com.example.edicalories.data.WeightRepository
 import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.BodyWeight
@@ -22,6 +23,9 @@ import com.example.edicalories.domain.JournalWeight
 import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
 import com.example.edicalories.domain.ProgressRange
+import com.example.edicalories.domain.WeightChart
+import com.example.edicalories.domain.WeightChartLine
+import com.example.edicalories.domain.WeightSample
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -183,19 +187,17 @@ class TodayViewModel(
             combine(
                 mealRepository.observeDayTotals(query.fromEpochDay, query.toEpochDay),
                 weightRepository.observeForRange(query.fromEpochDay, query.toEpochDay),
-            ) { totals, weights ->
+                weightRepository.observeLatestBefore(query.fromEpochDay),
+            ) { totals, weights, prior ->
+                val weightLine = weightChartLine(query.fromEpochDay, query.toEpochDay, weights, prior)
                 ProgressUiState(
                     period = query.period,
                     fromEpochDay = query.fromEpochDay,
                     toEpochDay = query.toEpochDay,
                     dailyGoal = query.dailyGoal,
                     caloriePoints = caloriePoints(query.fromEpochDay, query.toEpochDay, totals),
-                    weightPoints = weights.map { entry ->
-                        ChartPoint(
-                            epochDay = entry.epochDay,
-                            value = BodyWeight.toKg(entry.tenthsOfKg),
-                        )
-                    },
+                    weightPoints = weightLine.vertices.map { sample -> sample.toChartPoint() },
+                    weightMarks = weightLine.marks.map { sample -> sample.toChartPoint() },
                 )
             }
         }
@@ -522,6 +524,31 @@ private data class ProgressQuery(
     val toEpochDay: Long,
     val dailyGoal: Int,
 )
+
+private fun weightChartLine(
+    fromEpochDay: Long,
+    toEpochDay: Long,
+    weights: List<WeightEntry>,
+    prior: WeightEntry?,
+): WeightChartLine {
+    val samples = ArrayList<WeightSample>(weights.size)
+    for (entry in weights) {
+        samples.add(WeightSample(entry.epochDay, BodyWeight.toKg(entry.tenthsOfKg)))
+    }
+    val priorSample = if (prior == null) {
+        null
+    } else {
+        WeightSample(prior.epochDay, BodyWeight.toKg(prior.tenthsOfKg))
+    }
+    return WeightChart.line(fromEpochDay, toEpochDay, samples, priorSample)
+}
+
+private fun WeightSample.toChartPoint(): ChartPoint {
+    return ChartPoint(
+        epochDay = epochDay,
+        value = kilograms,
+    )
+}
 
 private fun caloriePoints(
     fromEpochDay: Long,

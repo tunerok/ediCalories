@@ -105,6 +105,7 @@ fun ProgressScreen(
                 title = stringResource(R.string.chart_weight),
                 emptyText = stringResource(R.string.chart_empty_weight),
                 points = state.weightPoints,
+                marks = state.weightMarks,
                 fromEpochDay = state.fromEpochDay,
                 toEpochDay = state.toEpochDay,
                 hasData = state.hasWeightRecords,
@@ -165,6 +166,7 @@ private fun ProgressChartCard(
     yMax: Float,
     guideValue: Float?,
     formatY: (Float) -> String,
+    marks: List<ChartPoint>? = null,
 ) {
     val axisColor = MaterialTheme.colorScheme.onSurfaceVariant
     val lineColor = MaterialTheme.colorScheme.primary
@@ -212,6 +214,7 @@ private fun ProgressChartCard(
                     }
                     DailyLineChart(
                         points = points,
+                        marks = marks,
                         fromEpochDay = fromEpochDay,
                         toEpochDay = toEpochDay,
                         yMin = yMin,
@@ -275,6 +278,7 @@ private fun DailyLineChart(
     axisColor: Color,
     guideColor: Color,
     modifier: Modifier = Modifier,
+    marks: List<ChartPoint>? = null,
 ) {
     Canvas(modifier = modifier) {
         val width = size.width
@@ -341,8 +345,9 @@ private fun DailyLineChart(
                 color = lineColor,
                 style = Stroke(width = 5f, cap = StrokeCap.Round),
             )
-            if (points.size <= MAX_DOT_COUNT) {
-                points.forEach { point ->
+            val dots = marks ?: points
+            if (dots.size in 1..MAX_DOT_COUNT) {
+                dots.forEach { point ->
                     drawCircle(
                         color = lineColor,
                         radius = 4f,

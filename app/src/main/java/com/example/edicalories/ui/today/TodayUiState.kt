@@ -33,6 +33,7 @@ data class ProgressUiState(
     val dailyGoal: Int = CalorieBalance.DEFAULT_DAILY_GOAL,
     val caloriePoints: List<ChartPoint> = emptyList(),
     val weightPoints: List<ChartPoint> = emptyList(),
+    val weightMarks: List<ChartPoint> = emptyList(),
 ) {
     val hasCalorieRecords: Boolean
         get() = caloriePoints.any { point -> point.value > 0f }
