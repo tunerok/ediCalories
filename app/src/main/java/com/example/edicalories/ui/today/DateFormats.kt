@@ -16,6 +16,12 @@ fun formatEpochDay(epochDay: Long): String {
         .format(date)
 }
 
+fun formatEpochDayShort(epochDay: Long): String {
+    return DateTimeFormatter.ofPattern("d MMM")
+        .withLocale(Locale.getDefault())
+        .format(LocalDate.ofEpochDay(epochDay))
+}
+
 fun formatYearMonth(yearMonth: YearMonth): String {
     val raw = DateTimeFormatter.ofPattern("LLLL yyyy")
         .withLocale(Locale.getDefault())

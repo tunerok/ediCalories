@@ -19,6 +19,8 @@ class MainActivity : AppCompatActivity() {
                 val todayViewModel: TodayViewModel = viewModel(
                     factory = TodayViewModel.Factory(
                         app.container.mealRepository,
+                        app.container.weightRepository,
+                        app.container.journalRepository,
                         app.container.preferencesRepository,
                     ),
                 )

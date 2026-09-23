@@ -15,6 +15,10 @@ class MealRepository(private val mealDao: MealDao) {
         return mealDao.observeDayTotals(fromEpochDay, toEpochDay)
     }
 
+    fun observeMinEpochDay(): Flow<Long?> {
+        return mealDao.observeMinEpochDay()
+    }
+
     suspend fun add(calories: Int, epochDay: Long, minutesOfDay: Int): Long {
         return mealDao.insert(
             Meal(

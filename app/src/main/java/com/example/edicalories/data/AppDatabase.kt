@@ -8,12 +8,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [Meal::class, DayTotal::class],
-    version = 2,
+    entities = [Meal::class, DayTotal::class, WeightEntry::class],
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun mealDao(): MealDao
+    abstract fun weightDao(): WeightDao
 
     companion object {
         private const val DATABASE_NAME: String = "meals.db"
@@ -34,6 +35,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS weights (" +
+                        "epochDay INTEGER NOT NULL PRIMARY KEY, " +
+                        "tenthsOfKg INTEGER NOT NULL" +
+                        ")",
+                )
+            }
+        }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -48,7 +60,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 instance = created
                 created

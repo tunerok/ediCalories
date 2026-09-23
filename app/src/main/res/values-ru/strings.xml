@@ -55,4 +55,26 @@
     <string name="invalid_meal_windows">Завтрак, обед и ужин должны начинаться в этом порядке</string>
     <string name="language_title">Язык</string>
     <string name="language_system">Как в системе</string>
+    <string name="weight_for_date">Вес за %1$s</string>
+    <string name="current_weight">Сейчас: %1$s кг</string>
+    <string name="card_weight">Вес %1$s кг</string>
+    <string name="weight_label">Вес, кг</string>
+    <string name="save_weight">Сохранить вес</string>
+    <string name="invalid_weight">Введите вес от 20.0 до 400.0 кг</string>
+    <string name="progress_title">Прогресс</string>
+    <string name="progress_open">Графики прогресса</string>
+    <string name="period_7">7 дней</string>
+    <string name="period_30">30 дней</string>
+    <string name="period_90">90 дней</string>
+    <string name="period_all">Всё</string>
+    <string name="chart_calories">Калории</string>
+    <string name="chart_weight">Вес</string>
+    <string name="chart_empty_calories">За этот период нет записей калорий</string>
+    <string name="chart_empty_weight">За этот период нет записей веса</string>
+    <string name="chart_goal">Норма</string>
+    <string name="clear_data">Очистить</string>
+    <string name="clear_data_title">Очистить записанные данные?</string>
+    <string name="clear_data_message">Будут удалены все приёмы пищи (калории и время) и все записи веса. Дневная норма калорий, окна приёмов и язык останутся. Это действие нельзя отменить.</string>
+    <string name="clear_data_confirm">Да, очистить</string>
+    <string name="journal_cleared">Записанные данные удалены</string>
 </resources>

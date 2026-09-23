@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
@@ -56,6 +57,8 @@ fun TodayScreen(viewModel: TodayViewModel) {
     var sheet by remember { mutableStateOf<TodaySheet>(TodaySheet.None) }
     var addMenuOpen by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showProgress by remember { mutableStateOf(false) }
+    val selectedDayWeightTenths by viewModel.selectedDayWeightTenths.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val mealListStates = remember { DayMealListStateStore() }
 
@@ -68,6 +71,8 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 UserMessage.InvalidCalories -> context.getString(R.string.invalid_calories)
                 UserMessage.InvalidGoal -> context.getString(R.string.invalid_goal)
                 UserMessage.InvalidMealWindows -> context.getString(R.string.invalid_meal_windows)
+                UserMessage.InvalidWeight -> context.getString(R.string.invalid_weight)
+                UserMessage.JournalCleared -> context.getString(R.string.journal_cleared)
                 UserMessage.WriteError -> context.getString(R.string.write_error)
             }
             snackbarHostState.showSnackbar(text)
@@ -95,11 +100,12 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     isToday = state.isToday,
                     onPickDate = { showDatePicker = true },
                     onToday = viewModel::selectToday,
+                    onProgress = { showProgress = true },
                     onSettings = { sheet = TodaySheet.Settings },
                 )
             },
             floatingActionButton = {
-                if (!addMenuOpen) {
+                if (!addMenuOpen && !showProgress) {
                     FloatingActionButton(
                         onClick = { addMenuOpen = true },
                     ) {
@@ -112,7 +118,10 @@ fun TodayScreen(viewModel: TodayViewModel) {
             },
         ) { innerPadding ->
             DaySwipeContainer(
-                enabled = !addMenuOpen && sheet == TodaySheet.None && !showDatePicker,
+                enabled = !addMenuOpen &&
+                    sheet == TodaySheet.None &&
+                    !showDatePicker &&
+                    !showProgress,
                 selectedEpochDay = state.selectedEpochDay,
                 onPreviousDay = viewModel::selectPreviousDay,
                 onNextDay = viewModel::selectNextDay,
@@ -148,6 +157,8 @@ fun TodayScreen(viewModel: TodayViewModel) {
 
         QuickAddOverlay(
             visible = addMenuOpen,
+            selectedEpochDay = state.selectedEpochDay,
+            existingWeightTenths = selectedDayWeightTenths,
             onDismiss = { addMenuOpen = false },
             onQuickAdd = { calories ->
                 viewModel.addQuick(calories)
@@ -159,6 +170,9 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     addMenuOpen = false
                 }
             },
+            onWeightSave = { weightRaw ->
+                viewModel.saveWeight(weightRaw, state.selectedEpochDay)
+            },
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -166,6 +180,20 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
         )
+        if (showProgress) {
+            val progressState by viewModel.progressUiState.collectAsStateWithLifecycle()
+            DisposableEffect(Unit) {
+                viewModel.startObservingProgress()
+                onDispose {
+                    viewModel.stopObservingProgress()
+                }
+            }
+            ProgressScreen(
+                state = progressState,
+                onBack = { showProgress = false },
+                onPeriodChange = viewModel::setChartPeriod,
+            )
+        }
     }
 
     if (showDatePicker) {
@@ -222,6 +250,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     }
                 },
                 onLanguageChange = AppLanguage::apply,
+                onClearJournal = viewModel::clearJournal,
             )
         }
     }
@@ -269,6 +298,7 @@ private fun TodayTopBar(
     isToday: Boolean,
     onPickDate: () -> Unit,
     onToday: () -> Unit,
+    onProgress: () -> Unit,
     onSettings: () -> Unit,
 ) {
     CenterAlignedTopAppBar(
@@ -292,6 +322,12 @@ private fun TodayTopBar(
                         contentDescription = stringResource(R.string.go_to_today),
                     )
                 }
+            }
+            IconButton(onClick = onProgress) {
+                Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ShowChart,
+                    contentDescription = stringResource(R.string.progress_open),
+                )
             }
             IconButton(onClick = onSettings) {
                 Icon(

@@ -55,4 +55,26 @@
     <string name="invalid_meal_windows">Breakfast, lunch and dinner must start in that order</string>
     <string name="language_title">Language</string>
     <string name="language_system">System default</string>
+    <string name="weight_for_date">Weight for %1$s</string>
+    <string name="current_weight">Current: %1$s kg</string>
+    <string name="card_weight">Weight %1$s kg</string>
+    <string name="weight_label">Weight, kg</string>
+    <string name="save_weight">Save weight</string>
+    <string name="invalid_weight">Enter a weight from 20.0 to 400.0 kg</string>
+    <string name="progress_title">Progress</string>
+    <string name="progress_open">Progress charts</string>
+    <string name="period_7">7 days</string>
+    <string name="period_30">30 days</string>
+    <string name="period_90">90 days</string>
+    <string name="period_all">All</string>
+    <string name="chart_calories">Calories</string>
+    <string name="chart_weight">Weight</string>
+    <string name="chart_empty_calories">No calorie records in this period</string>
+    <string name="chart_empty_weight">No weight records in this period</string>
+    <string name="chart_goal">Goal</string>
+    <string name="clear_data">Clear data</string>
+    <string name="clear_data_title">Clear logged data?</string>
+    <string name="clear_data_message">This will delete all meals (calories and times) and all weight records. The daily calorie goal, meal windows and language will stay. This cannot be undone.</string>
+    <string name="clear_data_confirm">Yes, clear</string>
+    <string name="journal_cleared">Logged data cleared</string>
 </resources>

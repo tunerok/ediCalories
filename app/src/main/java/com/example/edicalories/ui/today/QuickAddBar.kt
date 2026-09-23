@@ -11,13 +11,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -44,15 +44,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
+import com.example.edicalories.domain.BodyWeight
 
 private val QUICK_ADD_VALUES: List<Int> = listOf(50, 100, 250, 500)
 private val PANEL_WIDTH = 300.dp
@@ -62,17 +66,40 @@ private const val CUSTOM_CALORIES_MAX_DIGITS: Int = 5
 @Composable
 fun QuickAddOverlay(
     visible: Boolean,
+    selectedEpochDay: Long,
+    existingWeightTenths: Int?,
     onDismiss: () -> Unit,
     onQuickAdd: (Int) -> Unit,
     onCustomSave: (String) -> Unit,
+    onWeightSave: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BackHandler(enabled = visible, onBack = onDismiss)
 
     var caloriesRaw by remember { mutableStateOf("") }
+    var weightRaw by remember { mutableStateOf("") }
+    var weightFocused by remember { mutableStateOf(false) }
+    val weightScrollState = rememberScrollState()
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(weightFocused, imeBottom, visible) {
+        if (!visible || !weightFocused) {
+            return@LaunchedEffect
+        }
+        snapshotFlow { weightScrollState.maxValue }.collect { maxValue ->
+            weightScrollState.scrollTo(maxValue)
+        }
+    }
     LaunchedEffect(visible) {
         if (visible) {
             caloriesRaw = ""
+            weightRaw = existingWeightTenths?.let { tenths ->
+                BodyWeight.formatKg(tenths)
+            }.orEmpty()
+        }
+    }
+    LaunchedEffect(visible, existingWeightTenths) {
+        if (visible && existingWeightTenths != null) {
+            weightRaw = BodyWeight.formatKg(existingWeightTenths)
         }
     }
 
@@ -112,21 +139,14 @@ fun QuickAddOverlay(
                 tonalElevation = 6.dp,
                 shadowElevation = 8.dp,
             ) {
-                BoxWithConstraints(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .statusBarsPadding()
                         .navigationBarsPadding()
-                        .imePadding(),
+                        .imePadding()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .heightIn(min = maxHeight)
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
-                    ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -144,43 +164,96 @@ fun QuickAddOverlay(
                             )
                         }
                     }
-                    QUICK_ADD_VALUES.forEach { value ->
-                        FilledTonalButton(
-                            onClick = { onQuickAdd(value) },
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(weightScrollState),
+                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+                    ) {
+                        QUICK_ADD_VALUES.forEach { value ->
+                            FilledTonalButton(
+                                onClick = { onQuickAdd(value) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(text = value.toString())
+                            }
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        Text(
+                            text = stringResource(R.string.add_custom),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        OutlinedTextField(
+                            value = caloriesRaw,
+                            onValueChange = { incoming ->
+                                caloriesRaw = incoming.filter { char -> char.isDigit() }
+                                    .take(CUSTOM_CALORIES_MAX_DIGITS)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.calories_label)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { onCustomSave(caloriesRaw) },
+                            ),
+                        )
+                        Button(
+                            onClick = { onCustomSave(caloriesRaw) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(text = value.toString())
+                            Text(text = stringResource(R.string.save))
                         }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.weight_for_date,
+                                formatEpochDay(selectedEpochDay),
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        if (existingWeightTenths != null) {
+                            Text(
+                                text = stringResource(
+                                    R.string.current_weight,
+                                    BodyWeight.formatKg(existingWeightTenths),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        OutlinedTextField(
+                            value = weightRaw,
+                            onValueChange = { incoming ->
+                                weightRaw = BodyWeight.sanitizeInput(incoming)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { focusState ->
+                                    weightFocused = focusState.isFocused
+                                },
+                            label = { Text(stringResource(R.string.weight_label)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Decimal,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { onWeightSave(weightRaw) },
+                            ),
+                        )
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text(
-                        text = stringResource(R.string.add_custom),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    OutlinedTextField(
-                        value = caloriesRaw,
-                        onValueChange = { incoming ->
-                            caloriesRaw = incoming.filter { char -> char.isDigit() }
-                                .take(CUSTOM_CALORIES_MAX_DIGITS)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.calories_label)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { onCustomSave(caloriesRaw) },
-                        ),
-                    )
                     Button(
-                        onClick = { onCustomSave(caloriesRaw) },
-                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onWeightSave(weightRaw) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                     ) {
-                        Text(text = stringResource(R.string.save))
-                    }
+                        Text(text = stringResource(R.string.save_weight))
                     }
                 }
             }

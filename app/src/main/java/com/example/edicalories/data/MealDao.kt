@@ -51,6 +51,15 @@ abstract class MealDao {
     @Query("DELETE FROM day_totals WHERE epochDay = :epochDay AND totalCalories <= 0")
     abstract suspend fun deleteNonPositiveDayTotal(epochDay: Long)
 
+    @Query("SELECT MIN(epochDay) FROM meals")
+    abstract fun observeMinEpochDay(): Flow<Long?>
+
+    @Query("DELETE FROM meals")
+    abstract suspend fun deleteAllMeals()
+
+    @Query("DELETE FROM day_totals")
+    abstract suspend fun deleteAllDayTotals()
+
     @Transaction
     open suspend fun insert(meal: Meal): Long {
         val id = insertMeal(meal)

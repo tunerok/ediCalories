@@ -4,12 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.edicalories.data.DayTotal
+import com.example.edicalories.data.JournalRepository
 import com.example.edicalories.data.Meal
 import com.example.edicalories.data.MealRepository
 import com.example.edicalories.data.PreferencesRepository
+import com.example.edicalories.data.WeightRepository
+import com.example.edicalories.domain.BodyWeight
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.ChartPeriod
 import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
+import com.example.edicalories.domain.ProgressRange
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +33,8 @@ import java.time.LocalTime
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
     private val mealRepository: MealRepository,
+    private val weightRepository: WeightRepository,
+    private val journalRepository: JournalRepository,
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
@@ -37,8 +44,20 @@ class TodayViewModel(
     val messages = messagesChannel.receiveAsFlow()
 
     private val mealsWindow = selectedEpochDay.flatMapLatest { centerEpochDay ->
-        mealRepository.observeMealsForRange(centerEpochDay - 1L, centerEpochDay + 1L)
-            .map { meals -> MealsWindow(centerEpochDay, meals) }
+        combine(
+            mealRepository.observeMealsForRange(centerEpochDay - 1L, centerEpochDay + 1L),
+            weightRepository.observeLatestBefore(centerEpochDay - 1L),
+            weightRepository.observeLatestBefore(centerEpochDay),
+            weightRepository.observeLatestBefore(centerEpochDay + 1L),
+        ) { meals, weightBeforePrevious, weightBeforeCurrent, weightBeforeNext ->
+            MealsWindow(
+                centerEpochDay = centerEpochDay,
+                meals = meals,
+                weightBeforePrevious = weightBeforePrevious?.tenthsOfKg,
+                weightBeforeCurrent = weightBeforeCurrent?.tenthsOfKg,
+                weightBeforeNext = weightBeforeNext?.tenthsOfKg,
+            )
+        }
     }
 
     val uiState: StateFlow<TodayUiState> = combine(
@@ -49,9 +68,27 @@ class TodayViewModel(
         val grouped = window.meals.groupBy { meal -> meal.epochDay }
         val todayEpochDay = LocalDate.now().toEpochDay()
         TodayUiState(
-            previous = snapshotFor(window.centerEpochDay - 1L, grouped, dailyGoal, todayEpochDay),
-            current = snapshotFor(window.centerEpochDay, grouped, dailyGoal, todayEpochDay),
-            next = snapshotFor(window.centerEpochDay + 1L, grouped, dailyGoal, todayEpochDay),
+            previous = snapshotFor(
+                epochDay = window.centerEpochDay - 1L,
+                grouped = grouped,
+                dailyGoal = dailyGoal,
+                todayEpochDay = todayEpochDay,
+                priorWeightTenths = window.weightBeforePrevious,
+            ),
+            current = snapshotFor(
+                epochDay = window.centerEpochDay,
+                grouped = grouped,
+                dailyGoal = dailyGoal,
+                todayEpochDay = todayEpochDay,
+                priorWeightTenths = window.weightBeforeCurrent,
+            ),
+            next = snapshotFor(
+                epochDay = window.centerEpochDay + 1L,
+                grouped = grouped,
+                dailyGoal = dailyGoal,
+                todayEpochDay = todayEpochDay,
+                priorWeightTenths = window.weightBeforeNext,
+            ),
             mealSchedule = mealSchedule,
         )
     }.stateIn(
@@ -89,6 +126,85 @@ class TodayViewModel(
 
     fun stopObservingCalendar() {
         calendarRange.value = null
+    }
+
+    private val progressVisible = MutableStateFlow(false)
+    private val chartPeriod = MutableStateFlow(ChartPeriod.Days30)
+
+    val selectedDayWeightTenths: StateFlow<Int?> = selectedEpochDay
+        .flatMapLatest { epochDay ->
+            weightRepository.observeForDay(epochDay)
+                .map { entry -> entry?.tenthsOfKg }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null,
+        )
+
+    private val earliestLoggedEpochDay = combine(
+        mealRepository.observeMinEpochDay(),
+        weightRepository.observeMinEpochDay(),
+    ) { mealMin, weightMin ->
+        listOfNotNull(mealMin, weightMin).minOrNull()
+    }
+
+    val progressUiState: StateFlow<ProgressUiState> = combine(
+        progressVisible,
+        chartPeriod,
+        earliestLoggedEpochDay,
+        preferencesRepository.dailyGoal,
+    ) { visible, period, earliest, dailyGoal ->
+        if (!visible) {
+            null
+        } else {
+            val todayEpochDay = LocalDate.now().toEpochDay()
+            ProgressQuery(
+                period = period,
+                fromEpochDay = ProgressRange.startEpochDay(period, todayEpochDay, earliest),
+                toEpochDay = todayEpochDay,
+                dailyGoal = dailyGoal,
+            )
+        }
+    }.flatMapLatest { query ->
+        if (query == null) {
+            flowOf(ProgressUiState())
+        } else {
+            combine(
+                mealRepository.observeDayTotals(query.fromEpochDay, query.toEpochDay),
+                weightRepository.observeForRange(query.fromEpochDay, query.toEpochDay),
+            ) { totals, weights ->
+                ProgressUiState(
+                    period = query.period,
+                    fromEpochDay = query.fromEpochDay,
+                    toEpochDay = query.toEpochDay,
+                    dailyGoal = query.dailyGoal,
+                    caloriePoints = caloriePoints(query.fromEpochDay, query.toEpochDay, totals),
+                    weightPoints = weights.map { entry ->
+                        ChartPoint(
+                            epochDay = entry.epochDay,
+                            value = BodyWeight.toKg(entry.tenthsOfKg),
+                        )
+                    },
+                )
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ProgressUiState(),
+    )
+
+    fun startObservingProgress() {
+        progressVisible.value = true
+    }
+
+    fun stopObservingProgress() {
+        progressVisible.value = false
+    }
+
+    fun setChartPeriod(period: ChartPeriod) {
+        chartPeriod.value = period
     }
 
     fun selectPreviousDay() {
@@ -149,6 +265,35 @@ class TodayViewModel(
         }
     }
 
+    fun saveWeight(weightRaw: String, epochDay: Long) {
+        val tenthsOfKg = BodyWeight.parseToTenths(weightRaw)
+        if (tenthsOfKg == null) {
+            emitMessage(UserMessage.InvalidWeight)
+            return
+        }
+        viewModelScope.launch {
+            runCatching {
+                weightRepository.upsert(epochDay, tenthsOfKg)
+            }.onSuccess {
+                emitMessage(UserMessage.Saved)
+            }.onFailure {
+                emitMessage(UserMessage.WriteError)
+            }
+        }
+    }
+
+    fun clearJournal() {
+        viewModelScope.launch {
+            runCatching {
+                journalRepository.clearLoggedEntries()
+            }.onSuccess {
+                emitMessage(UserMessage.JournalCleared)
+            }.onFailure {
+                emitMessage(UserMessage.WriteError)
+            }
+        }
+    }
+
     fun saveSettings(goalRaw: String, schedule: MealSchedule) {
         val goal = CalorieBalance.parseDailyGoal(goalRaw)
         if (goal == null) {
@@ -188,6 +333,7 @@ class TodayViewModel(
         grouped: Map<Long, List<Meal>>,
         dailyGoal: Int,
         todayEpochDay: Long,
+        priorWeightTenths: Int?,
     ): DaySnapshot {
         val meals = grouped[epochDay].orEmpty()
         val consumed = CalorieBalance.consumed(meals.map { meal -> meal.calories })
@@ -199,6 +345,7 @@ class TodayViewModel(
             remaining = CalorieBalance.remaining(dailyGoal, consumed),
             progress = CalorieBalance.progress(dailyGoal, consumed),
             isToday = epochDay == todayEpochDay,
+            priorWeightTenths = priorWeightTenths,
         )
     }
 
@@ -210,12 +357,19 @@ class TodayViewModel(
 
     class Factory(
         private val mealRepository: MealRepository,
+        private val weightRepository: WeightRepository,
+        private val journalRepository: JournalRepository,
         private val preferencesRepository: PreferencesRepository,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(TodayViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return TodayViewModel(mealRepository, preferencesRepository) as T
+                return TodayViewModel(
+                    mealRepository,
+                    weightRepository,
+                    journalRepository,
+                    preferencesRepository,
+                ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -225,12 +379,43 @@ class TodayViewModel(
 private data class MealsWindow(
     val centerEpochDay: Long,
     val meals: List<Meal>,
+    val weightBeforePrevious: Int?,
+    val weightBeforeCurrent: Int?,
+    val weightBeforeNext: Int?,
 )
 
 private data class EpochDayRange(
     val fromEpochDay: Long,
     val toEpochDay: Long,
 )
+
+private data class ProgressQuery(
+    val period: ChartPeriod,
+    val fromEpochDay: Long,
+    val toEpochDay: Long,
+    val dailyGoal: Int,
+)
+
+private fun caloriePoints(
+    fromEpochDay: Long,
+    toEpochDay: Long,
+    totals: List<DayTotal>,
+): List<ChartPoint> {
+    val totalsByDay = totalsToMap(totals)
+    val points = ArrayList<ChartPoint>()
+    var epochDay = fromEpochDay
+    while (epochDay <= toEpochDay) {
+        val calories = totalsByDay[epochDay] ?: 0
+        points.add(
+            ChartPoint(
+                epochDay = epochDay,
+                value = calories.toFloat(),
+            ),
+        )
+        epochDay += 1L
+    }
+    return points
+}
 
 private fun totalsToMap(totals: List<DayTotal>): Map<Long, Int> {
     val result = HashMap<Long, Int>(totals.size)

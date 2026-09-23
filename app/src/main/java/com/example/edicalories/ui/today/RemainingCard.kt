@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
+import com.example.edicalories.domain.BodyWeight
 import kotlin.math.abs
 
 @Composable
@@ -95,6 +96,18 @@ fun RemainingCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                val priorWeightTenths = state.priorWeightTenths
+                if (priorWeightTenths != null) {
+                    Text(
+                        text = stringResource(
+                            R.string.card_weight,
+                            BodyWeight.formatKg(priorWeightTenths),
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }

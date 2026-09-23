@@ -58,6 +58,7 @@ fun SettingsSheet(
     onDismiss: () -> Unit,
     onSave: (goalRaw: String, schedule: MealSchedule) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
+    onClearJournal: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var goalRaw by remember { mutableStateOf(currentGoal.toString()) }
@@ -66,6 +67,7 @@ fun SettingsSheet(
     var lunchStart by remember { mutableIntStateOf(currentSchedule.lunchStart) }
     var dinnerStart by remember { mutableIntStateOf(currentSchedule.dinnerStart) }
     var windowField by remember { mutableStateOf<MealWindowField?>(null) }
+    var showClearConfirm by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -154,6 +156,13 @@ fun SettingsSheet(
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
+            OutlinedButton(
+                onClick = { showClearConfirm = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.clear_data))
+            }
+            Spacer(modifier = Modifier.height(20.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -182,6 +191,16 @@ fun SettingsSheet(
                 }
             }
         }
+    }
+
+    if (showClearConfirm) {
+        ClearJournalDialog(
+            onConfirm = {
+                showClearConfirm = false
+                onClearJournal()
+            },
+            onDismiss = { showClearConfirm = false },
+        )
     }
 
     val editingField = windowField

@@ -2,7 +2,9 @@ package com.example.edicalories.ui.today
 
 import com.example.edicalories.data.Meal
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.ChartPeriod
 import com.example.edicalories.domain.MealSchedule
+import com.example.edicalories.domain.ProgressRange
 import java.time.LocalDate
 
 data class DaySnapshot(
@@ -13,9 +15,30 @@ data class DaySnapshot(
     val remaining: Int = CalorieBalance.DEFAULT_DAILY_GOAL,
     val progress: Float = 0f,
     val isToday: Boolean = true,
+    val priorWeightTenths: Int? = null,
 ) {
     val isOver: Boolean
         get() = remaining < 0
+}
+
+data class ChartPoint(
+    val epochDay: Long,
+    val value: Float,
+)
+
+data class ProgressUiState(
+    val period: ChartPeriod = ChartPeriod.Days30,
+    val fromEpochDay: Long = LocalDate.now().toEpochDay() - (ProgressRange.DAYS_30 - 1L),
+    val toEpochDay: Long = LocalDate.now().toEpochDay(),
+    val dailyGoal: Int = CalorieBalance.DEFAULT_DAILY_GOAL,
+    val caloriePoints: List<ChartPoint> = emptyList(),
+    val weightPoints: List<ChartPoint> = emptyList(),
+) {
+    val hasCalorieRecords: Boolean
+        get() = caloriePoints.any { point -> point.value > 0f }
+
+    val hasWeightRecords: Boolean
+        get() = weightPoints.isNotEmpty()
 }
 
 data class TodayUiState(
@@ -47,5 +70,7 @@ sealed interface UserMessage {
     data object InvalidCalories : UserMessage
     data object InvalidGoal : UserMessage
     data object InvalidMealWindows : UserMessage
+    data object InvalidWeight : UserMessage
+    data object JournalCleared : UserMessage
     data object WriteError : UserMessage
 }
