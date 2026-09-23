@@ -42,15 +42,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
 import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
+
+private val SettingsSheetScrollConnection = object : NestedScrollConnection {
+    override fun onPostScroll(
+        consumed: Offset,
+        available: Offset,
+        source: NestedScrollSource,
+    ): Offset {
+        return Offset(x = 0f, y = available.y)
+    }
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+        return Velocity(x = 0f, y = available.y)
+    }
+}
 
 private enum class MealWindowField {
     Breakfast,
@@ -105,9 +124,11 @@ fun SettingsSheet(
     ) {
         Column(
             modifier = Modifier
+                .weight(1f, fill = false)
                 .fillMaxWidth()
-                .imePadding()
+                .nestedScroll(SettingsSheetScrollConnection)
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 28.dp),
         ) {

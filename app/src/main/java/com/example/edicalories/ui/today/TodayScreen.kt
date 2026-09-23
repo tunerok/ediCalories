@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
@@ -24,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -208,11 +212,19 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 )
             },
         )
-        SnackbarHost(
+        CompactMessageHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding(),
+                .align(
+                    if (addMenuOpen) {
+                        Alignment.BottomStart
+                    } else {
+                        Alignment.BottomCenter
+                    },
+                )
+                .wrapContentSize()
+                .navigationBarsPadding()
+                .padding(16.dp),
         )
         if (showProgress) {
             val progressState by viewModel.progressUiState.collectAsStateWithLifecycle()
@@ -327,6 +339,31 @@ private fun DayPage(
                 bottom = 88.dp,
             ),
         )
+    }
+}
+
+@Composable
+private fun CompactMessageHost(
+    hostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+) {
+    SnackbarHost(
+        hostState = hostState,
+        modifier = modifier,
+    ) { data ->
+        Surface(
+            modifier = Modifier.widthIn(max = 280.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.inverseSurface,
+            shadowElevation = 3.dp,
+        ) {
+            Text(
+                text = data.visuals.message,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+            )
+        }
     }
 }
 
