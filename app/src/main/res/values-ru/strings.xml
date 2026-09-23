@@ -93,4 +93,5 @@
     <string name="invalid_import">Это не файл резервной копии EdiCalories</string>
     <string name="file_read_error">Не удалось прочитать файл</string>
     <string name="file_write_error">Не удалось записать файл</string>
+    <string name="app_version">Версия %1$s</string>
 </resources>

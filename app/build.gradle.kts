@@ -4,6 +4,20 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.isFile
+val keystoreProperties = if (hasReleaseKeystore) {
+    keystorePropertiesFile.readLines()
+        .map { line -> line.trim() }
+        .filter { line -> line.isNotEmpty() && !line.startsWith("#") && line.contains("=") }
+        .associate { line ->
+            val separator = line.indexOf('=')
+            line.substring(0, separator).trim() to line.substring(separator + 1).trim()
+        }
+} else {
+    emptyMap()
+}
+
 android {
     namespace = "com.example.edicalories"
     compileSdk {
@@ -20,10 +34,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(requireNotNull(keystoreProperties["storeFile"]))
+                storePassword = requireNotNull(keystoreProperties["storePassword"])
+                keyAlias = requireNotNull(keystoreProperties["keyAlias"])
+                keyPassword = requireNotNull(keystoreProperties["keyPassword"])
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
+            }
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

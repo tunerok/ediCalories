@@ -1,5 +1,8 @@
 package com.example.edicalories.ui.today
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,6 +86,8 @@ fun SettingsSheet(
     var showImportConfirm by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val versionName = remember(context) { installedVersionName(context) }
     val languageLabel = when (currentLanguage) {
         AppLanguage.System -> stringResource(R.string.language_system)
         AppLanguage.English -> "English"
@@ -250,6 +256,14 @@ fun SettingsSheet(
                 ) {
                     Text(stringResource(R.string.save))
                 }
+            }
+            if (versionName != null) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = stringResource(R.string.app_version, versionName),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -451,4 +465,21 @@ private fun MealWindowPickerDialog(
         title = { Text(stringResource(R.string.pick_meal_window)) },
         text = { TimePicker(state = pickerState) },
     )
+}
+
+private fun installedVersionName(context: Context): String? {
+    return try {
+        val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.PackageInfoFlags.of(0),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(context.packageName, 0)
+        }
+        packageInfo.versionName
+    } catch (_: PackageManager.NameNotFoundException) {
+        null
+    }
 }
