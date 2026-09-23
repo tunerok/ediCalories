@@ -54,6 +54,11 @@ abstract class MealDao {
     @Query("SELECT MIN(epochDay) FROM meals")
     abstract fun observeMinEpochDay(): Flow<Long?>
 
+    @Query(
+        "SELECT * FROM meals ORDER BY epochDay ASC, minutesOfDay ASC, id ASC",
+    )
+    abstract suspend fun getAllMeals(): List<Meal>
+
     @Query("DELETE FROM meals")
     abstract suspend fun deleteAllMeals()
 

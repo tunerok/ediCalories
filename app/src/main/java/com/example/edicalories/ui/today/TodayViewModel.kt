@@ -1,5 +1,7 @@
 package com.example.edicalories.ui.today
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,9 +14,14 @@ import com.example.edicalories.data.WeightRepository
 import com.example.edicalories.domain.BodyWeight
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.ChartPeriod
+import com.example.edicalories.domain.JournalDocument
+import com.example.edicalories.domain.JournalExportFormat
+import com.example.edicalories.domain.JournalMeal
+import com.example.edicalories.domain.JournalWeight
 import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
 import com.example.edicalories.domain.ProgressRange
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +34,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -292,6 +301,107 @@ class TodayViewModel(
                 emitMessage(UserMessage.WriteError)
             }
         }
+    }
+
+    fun exportJournal(uri: Uri, format: JournalExportFormat, resolver: ContentResolver) {
+        viewModelScope.launch {
+            runCatching {
+                val document = buildExportDocument()
+                val text = when (format) {
+                    JournalExportFormat.Json -> document.toJson()
+                    JournalExportFormat.Csv -> document.toCsv()
+                }
+                val bytes = text.toByteArray(StandardCharsets.UTF_8)
+                withContext(Dispatchers.IO) {
+                    val stream = resolver.openOutputStream(uri)
+                        ?: error("missing output stream")
+                    stream.use { output ->
+                        output.write(bytes)
+                        output.flush()
+                    }
+                }
+            }.onSuccess {
+                emitMessage(UserMessage.JournalExported)
+            }.onFailure {
+                emitMessage(UserMessage.FileWriteError)
+            }
+        }
+    }
+
+    fun importJournal(uri: Uri, resolver: ContentResolver) {
+        viewModelScope.launch {
+            val bytes = runCatching {
+                withContext(Dispatchers.IO) {
+                    val stream = resolver.openInputStream(uri)
+                        ?: error("missing input stream")
+                    stream.use { input ->
+                        JournalDocument.readLimited(input)
+                    }
+                }
+            }.getOrElse {
+                emitMessage(UserMessage.FileReadError)
+                return@launch
+            }
+            if (bytes == null) {
+                emitMessage(UserMessage.InvalidImportFormat)
+                return@launch
+            }
+            val document = JournalDocument.parseJson(bytes)
+            if (document == null) {
+                emitMessage(UserMessage.InvalidImportFormat)
+                return@launch
+            }
+            runCatching {
+                journalRepository.mergeImported(document.meals, document.weights)
+                preferencesRepository.setDailyGoalAndSchedule(
+                    document.dailyGoal,
+                    MealSchedule(
+                        groupingEnabled = document.groupingEnabled,
+                        breakfastStart = document.breakfastStart,
+                        lunchStart = document.lunchStart,
+                        dinnerStart = document.dinnerStart,
+                    ),
+                )
+            }.onSuccess {
+                emitMessage(UserMessage.JournalImported)
+            }.onFailure {
+                emitMessage(UserMessage.WriteError)
+            }
+        }
+    }
+
+    private suspend fun buildExportDocument(): JournalDocument {
+        val snapshot = journalRepository.snapshot()
+        val goal = preferencesRepository.currentDailyGoal()
+        val schedule = preferencesRepository.currentMealSchedule()
+        val meals = ArrayList<JournalMeal>(snapshot.meals.size)
+        for (meal in snapshot.meals) {
+            meals.add(
+                JournalMeal(
+                    calories = meal.calories,
+                    epochDay = meal.epochDay,
+                    minutesOfDay = meal.minutesOfDay,
+                ),
+            )
+        }
+        val weights = ArrayList<JournalWeight>(snapshot.weights.size)
+        for (weight in snapshot.weights) {
+            weights.add(
+                JournalWeight(
+                    epochDay = weight.epochDay,
+                    tenthsOfKg = weight.tenthsOfKg,
+                ),
+            )
+        }
+        return JournalDocument(
+            dailyGoal = goal,
+            groupingEnabled = schedule.groupingEnabled,
+            breakfastStart = schedule.breakfastStart,
+            lunchStart = schedule.lunchStart,
+            dinnerStart = schedule.dinnerStart,
+            meals = meals,
+            weights = weights,
+        )
     }
 
     fun saveSettings(goalRaw: String, schedule: MealSchedule) {

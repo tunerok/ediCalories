@@ -10,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.MealSchedule
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -28,6 +29,14 @@ class PreferencesRepository(context: Context) {
             lunchStart = preferences[LUNCH_START_KEY] ?: MealSchedule.DEFAULT_LUNCH_START,
             dinnerStart = preferences[DINNER_START_KEY] ?: MealSchedule.DEFAULT_DINNER_START,
         )
+    }
+
+    suspend fun currentDailyGoal(): Int {
+        return dailyGoal.first()
+    }
+
+    suspend fun currentMealSchedule(): MealSchedule {
+        return mealSchedule.first()
     }
 
     suspend fun setDailyGoalAndSchedule(goal: Int, schedule: MealSchedule) {

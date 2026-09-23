@@ -77,4 +77,17 @@
     <string name="clear_data_message">This will delete all meals (calories and times) and all weight records. The daily calorie goal, meal windows and language will stay. This cannot be undone.</string>
     <string name="clear_data_confirm">Yes, clear</string>
     <string name="journal_cleared">Logged data cleared</string>
+    <string name="export_data">Export</string>
+    <string name="export_data_title">Export data</string>
+    <string name="export_format_native">EdiCalories file</string>
+    <string name="export_format_csv">CSV</string>
+    <string name="import_data">Import</string>
+    <string name="import_data_title">Import data?</string>
+    <string name="import_data_message">Meals will be added as new records. Importing the same file again will create duplicates. Weight for a day already in the journal will be replaced. Daily calorie goal and meal windows will be taken from the file. Language will stay. Only the EdiCalories file format is accepted.</string>
+    <string name="import_data_confirm">Import</string>
+    <string name="journal_exported">Exported</string>
+    <string name="journal_imported">Imported</string>
+    <string name="invalid_import">This file is not a valid EdiCalories backup</string>
+    <string name="file_read_error">Could not read the file</string>
+    <string name="file_write_error">Could not write the file</string>
 </resources>

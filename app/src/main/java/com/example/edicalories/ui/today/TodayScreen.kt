@@ -1,5 +1,7 @@
 package com.example.edicalories.ui.today
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.edicalories.R
 import com.example.edicalories.data.Meal
 import com.example.edicalories.domain.CalorieBalance
+import com.example.edicalories.domain.JournalDocument
+import com.example.edicalories.domain.JournalExportFormat
 import com.example.edicalories.domain.MealSchedule
 
 private sealed interface TodaySheet {
@@ -61,6 +65,27 @@ fun TodayScreen(viewModel: TodayViewModel) {
     val selectedDayWeightTenths by viewModel.selectedDayWeightTenths.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val mealListStates = remember { DayMealListStateStore() }
+    val exportJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportJournal(uri, JournalExportFormat.Json, context.contentResolver)
+        }
+    }
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportJournal(uri, JournalExportFormat.Csv, context.contentResolver)
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importJournal(uri, context.contentResolver)
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { message ->
@@ -73,6 +98,14 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 UserMessage.InvalidMealWindows -> context.getString(R.string.invalid_meal_windows)
                 UserMessage.InvalidWeight -> context.getString(R.string.invalid_weight)
                 UserMessage.JournalCleared -> context.getString(R.string.journal_cleared)
+                UserMessage.JournalExported -> context.getString(R.string.journal_exported)
+                UserMessage.JournalImported -> {
+                    sheet = TodaySheet.None
+                    context.getString(R.string.journal_imported)
+                }
+                UserMessage.InvalidImportFormat -> context.getString(R.string.invalid_import)
+                UserMessage.FileReadError -> context.getString(R.string.file_read_error)
+                UserMessage.FileWriteError -> context.getString(R.string.file_write_error)
                 UserMessage.WriteError -> context.getString(R.string.write_error)
             }
             snackbarHostState.showSnackbar(text)
@@ -250,6 +283,9 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     }
                 },
                 onLanguageChange = AppLanguage::apply,
+                onExportJson = { exportJsonLauncher.launch(JournalDocument.FILE_NAME_JSON) },
+                onExportCsv = { exportCsvLauncher.launch(JournalDocument.FILE_NAME_CSV) },
+                onImport = { importLauncher.launch(arrayOf("*/*")) },
                 onClearJournal = viewModel::clearJournal,
             )
         }

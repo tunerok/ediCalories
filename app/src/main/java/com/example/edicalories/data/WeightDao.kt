@@ -31,4 +31,7 @@ interface WeightDao {
 
     @Query("DELETE FROM weights")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM weights ORDER BY epochDay ASC")
+    suspend fun getAll(): List<WeightEntry>
 }

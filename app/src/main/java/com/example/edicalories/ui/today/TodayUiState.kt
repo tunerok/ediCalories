@@ -72,5 +72,10 @@ sealed interface UserMessage {
     data object InvalidMealWindows : UserMessage
     data object InvalidWeight : UserMessage
     data object JournalCleared : UserMessage
+    data object JournalExported : UserMessage
+    data object JournalImported : UserMessage
+    data object InvalidImportFormat : UserMessage
+    data object FileReadError : UserMessage
+    data object FileWriteError : UserMessage
     data object WriteError : UserMessage
 }

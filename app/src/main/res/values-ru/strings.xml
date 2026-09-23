@@ -77,4 +77,17 @@
     <string name="clear_data_message">Будут удалены все приёмы пищи (калории и время) и все записи веса. Дневная норма калорий, окна приёмов и язык останутся. Это действие нельзя отменить.</string>
     <string name="clear_data_confirm">Да, очистить</string>
     <string name="journal_cleared">Записанные данные удалены</string>
+    <string name="export_data">Экспорт</string>
+    <string name="export_data_title">Экспорт данных</string>
+    <string name="export_format_native">Файл EdiCalories</string>
+    <string name="export_format_csv">CSV</string>
+    <string name="import_data">Импорт</string>
+    <string name="import_data_title">Импортировать данные?</string>
+    <string name="import_data_message">Приёмы пищи будут добавлены как новые записи. Повторный импорт того же файла создаст копии. Вес за уже существующий день будет заменён. Дневная норма и окна приёмов возьмутся из файла. Язык останется. Принимается только файл формата EdiCalories.</string>
+    <string name="import_data_confirm">Импортировать</string>
+    <string name="journal_exported">Экспортировано</string>
+    <string name="journal_imported">Импортировано</string>
+    <string name="invalid_import">Это не файл резервной копии EdiCalories</string>
+    <string name="file_read_error">Не удалось прочитать файл</string>
+    <string name="file_write_error">Не удалось записать файл</string>
 </resources>

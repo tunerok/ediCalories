@@ -58,6 +58,9 @@ fun SettingsSheet(
     onDismiss: () -> Unit,
     onSave: (goalRaw: String, schedule: MealSchedule) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
+    onExportJson: () -> Unit,
+    onExportCsv: () -> Unit,
+    onImport: () -> Unit,
     onClearJournal: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -68,6 +71,8 @@ fun SettingsSheet(
     var dinnerStart by remember { mutableIntStateOf(currentSchedule.dinnerStart) }
     var windowField by remember { mutableStateOf<MealWindowField?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
+    var showExportFormat by remember { mutableStateOf(false) }
+    var showImportConfirm by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -157,6 +162,20 @@ fun SettingsSheet(
             }
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
+                onClick = { showExportFormat = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.export_data))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showImportConfirm = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.import_data))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
                 onClick = { showClearConfirm = true },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -191,6 +210,30 @@ fun SettingsSheet(
                 }
             }
         }
+    }
+
+    if (showExportFormat) {
+        ExportFormatDialog(
+            onExportJson = {
+                showExportFormat = false
+                onExportJson()
+            },
+            onExportCsv = {
+                showExportFormat = false
+                onExportCsv()
+            },
+            onDismiss = { showExportFormat = false },
+        )
+    }
+
+    if (showImportConfirm) {
+        ImportJournalDialog(
+            onConfirm = {
+                showImportConfirm = false
+                onImport()
+            },
+            onDismiss = { showImportConfirm = false },
+        )
     }
 
     if (showClearConfirm) {
