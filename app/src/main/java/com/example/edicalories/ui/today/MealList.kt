@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
@@ -32,9 +33,11 @@ import com.example.edicalories.domain.MinutesOfDay
 
 @Composable
 fun MealList(
+    epochDay: Long,
     meals: List<Meal>,
     schedule: MealSchedule,
     onMealClick: (Meal) -> Unit,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -66,6 +69,7 @@ fun MealList(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -73,6 +77,7 @@ fun MealList(
             mealRows(meals = meals, onMealClick = onMealClick)
         } else {
             groupedMealRows(
+                epochDay = epochDay,
                 meals = meals,
                 groups = groups,
                 onMealClick = onMealClick,
@@ -95,6 +100,7 @@ private fun LazyListScope.mealRows(
 }
 
 private fun LazyListScope.groupedMealRows(
+    epochDay: Long,
     meals: List<Meal>,
     groups: List<MealGroup>,
     onMealClick: (Meal) -> Unit,
@@ -104,14 +110,20 @@ private fun LazyListScope.groupedMealRows(
         indexById[meal.id] = index + 1
     }
     groups.forEach { group ->
-        val headerKey = group.slot?.name ?: "untimed"
-        item(key = "header-$headerKey") {
+        item(
+            key = mealGroupHeaderKey(epochDay, group.slot),
+            contentType = MEAL_GROUP_HEADER_CONTENT_TYPE,
+        ) {
             MealGroupHeader(
                 slot = group.slot,
                 calories = group.calories,
             )
         }
-        items(group.meals, key = { meal -> meal.id }) { meal ->
+        items(
+            items = group.meals,
+            key = { meal -> meal.id },
+            contentType = { MEAL_ROW_CONTENT_TYPE },
+        ) { meal ->
             MealRow(
                 index = indexById[meal.id] ?: 0,
                 meal = meal,
@@ -119,6 +131,14 @@ private fun LazyListScope.groupedMealRows(
             )
         }
     }
+}
+
+private const val MEAL_GROUP_HEADER_CONTENT_TYPE: String = "meal-group-header"
+private const val MEAL_ROW_CONTENT_TYPE: String = "meal-row"
+
+private fun mealGroupHeaderKey(epochDay: Long, slot: MealSlot?): String {
+    val slotName = slot?.name ?: "untimed"
+    return "header-$epochDay-$slotName"
 }
 
 @Composable

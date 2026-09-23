@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
@@ -56,6 +57,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
     var addMenuOpen by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val mealListStates = remember { DayMealListStateStore() }
 
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { message ->
@@ -70,6 +72,18 @@ fun TodayScreen(viewModel: TodayViewModel) {
             }
             snackbarHostState.showSnackbar(text)
         }
+    }
+
+    LaunchedEffect(
+        state.previous.epochDay,
+        state.current.epochDay,
+        state.next.epochDay,
+    ) {
+        mealListStates.retain(
+            state.previous.epochDay,
+            state.current.epochDay,
+            state.next.epochDay,
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -109,6 +123,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     DayPage(
                         snapshot = state.previous,
                         schedule = state.mealSchedule,
+                        listState = mealListStates.stateFor(state.previous.epochDay),
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
@@ -116,6 +131,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     DayPage(
                         snapshot = state.current,
                         schedule = state.mealSchedule,
+                        listState = mealListStates.stateFor(state.current.epochDay),
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
@@ -123,6 +139,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     DayPage(
                         snapshot = state.next,
                         schedule = state.mealSchedule,
+                        listState = mealListStates.stateFor(state.next.epochDay),
                         onMealClick = { meal -> sheet = TodaySheet.Edit(meal) },
                     )
                 },
@@ -214,6 +231,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
 private fun DayPage(
     snapshot: DaySnapshot,
     schedule: MealSchedule,
+    listState: LazyListState,
     onMealClick: (Meal) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -228,9 +246,11 @@ private fun DayPage(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
         MealList(
+            epochDay = snapshot.epochDay,
             meals = snapshot.meals,
             schedule = schedule,
             onMealClick = onMealClick,
+            listState = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -281,4 +301,31 @@ private fun TodayTopBar(
             }
         },
     )
+}
+
+private class DayMealListStateStore {
+    private val states = HashMap<Long, LazyListState>()
+
+    fun stateFor(epochDay: Long): LazyListState {
+        val existing = states[epochDay]
+        if (existing != null) {
+            return existing
+        }
+        val created = LazyListState()
+        states[epochDay] = created
+        return created
+    }
+
+    fun retain(firstEpochDay: Long, secondEpochDay: Long, thirdEpochDay: Long) {
+        val keys = states.keys.iterator()
+        while (keys.hasNext()) {
+            val epochDay = keys.next()
+            val visible = epochDay == firstEpochDay ||
+                epochDay == secondEpochDay ||
+                epochDay == thirdEpochDay
+            if (!visible) {
+                keys.remove()
+            }
+        }
+    }
 }
