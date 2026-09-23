@@ -54,8 +54,10 @@ private enum class MealWindowField {
 fun SettingsSheet(
     currentGoal: Int,
     currentSchedule: MealSchedule,
+    currentLanguage: AppLanguage,
     onDismiss: () -> Unit,
     onSave: (goalRaw: String, schedule: MealSchedule) -> Unit,
+    onLanguageChange: (AppLanguage) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var goalRaw by remember { mutableStateOf(currentGoal.toString()) }
@@ -126,6 +128,29 @@ fun SettingsSheet(
                     label = stringResource(R.string.dinner_start),
                     minutesOfDay = dinnerStart,
                     onClick = { windowField = MealWindowField.Dinner },
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = stringResource(R.string.language_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.selectableGroup()) {
+                MealListModeRow(
+                    label = stringResource(R.string.language_system),
+                    selected = currentLanguage == AppLanguage.System,
+                    onClick = { onLanguageChange(AppLanguage.System) },
+                )
+                MealListModeRow(
+                    label = "English",
+                    selected = currentLanguage == AppLanguage.English,
+                    onClick = { onLanguageChange(AppLanguage.English) },
+                )
+                MealListModeRow(
+                    label = "Русский",
+                    selected = currentLanguage == AppLanguage.Russian,
+                    onClick = { onLanguageChange(AppLanguage.Russian) },
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))

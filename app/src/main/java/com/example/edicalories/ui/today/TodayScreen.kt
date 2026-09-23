@@ -194,6 +194,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
             SettingsSheet(
                 currentGoal = state.dailyGoal,
                 currentSchedule = state.mealSchedule,
+                currentLanguage = AppLanguage.current(),
                 onDismiss = { sheet = TodaySheet.None },
                 onSave = { goalRaw, schedule ->
                     viewModel.saveSettings(goalRaw, schedule)
@@ -203,6 +204,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                         sheet = TodaySheet.None
                     }
                 },
+                onLanguageChange = AppLanguage::apply,
             )
         }
     }

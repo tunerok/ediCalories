@@ -53,4 +53,6 @@
     <string name="dinner_start">Начало ужина</string>
     <string name="pick_meal_window">Выберите время начала</string>
     <string name="invalid_meal_windows">Завтрак, обед и ужин должны начинаться в этом порядке</string>
+    <string name="language_title">Язык</string>
+    <string name="language_system">Как в системе</string>
 </resources>
