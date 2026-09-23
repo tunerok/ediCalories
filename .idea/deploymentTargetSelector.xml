@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="deploymentTargetSelector">
+    <selectionStates>
+      <SelectionState runConfigName="app">
+        <options>
+          <DialogSelection>
+            <targets>
+              <Target type="DEFAULT_BOOT">
+                <handle>
+                  <DeviceId pluginId="LocalEmulator" identifier="path=/Users/artem/.android/avd/Medium_Phone.avd" />
+                </handle>
+              </Target>
+            </targets>
+          </DialogSelection>
+        </options>
+      </SelectionState>
+    </selectionStates>
+  </component>
+</project>
