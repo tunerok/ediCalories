@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.edicalories.R
 import com.example.edicalories.data.Meal
+import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.JournalDocument
 import com.example.edicalories.domain.JournalExportFormat
@@ -273,6 +274,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                 currentGoal = state.dailyGoal,
                 currentSchedule = state.mealSchedule,
                 currentLanguage = AppLanguage.current(),
+                currentTheme = AppThemeMode.current(),
                 onDismiss = { sheet = TodaySheet.None },
                 onSave = { goalRaw, schedule ->
                     viewModel.saveSettings(goalRaw, schedule)
@@ -283,6 +285,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
                     }
                 },
                 onLanguageChange = AppLanguage::apply,
+                onThemeChange = viewModel::setThemeMode,
                 onExportJson = { exportJsonLauncher.launch(JournalDocument.FILE_NAME_JSON) },
                 onExportCsv = { exportCsvLauncher.launch(JournalDocument.FILE_NAME_CSV) },
                 onImport = { importLauncher.launch(arrayOf("*/*")) },

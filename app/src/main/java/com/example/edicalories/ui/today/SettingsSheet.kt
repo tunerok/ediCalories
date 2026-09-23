@@ -16,7 +16,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -40,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.edicalories.R
+import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.MealSchedule
 import com.example.edicalories.domain.MinutesOfDay
 
@@ -55,9 +60,11 @@ fun SettingsSheet(
     currentGoal: Int,
     currentSchedule: MealSchedule,
     currentLanguage: AppLanguage,
+    currentTheme: AppThemeMode,
     onDismiss: () -> Unit,
     onSave: (goalRaw: String, schedule: MealSchedule) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
+    onThemeChange: (AppThemeMode) -> Unit,
     onExportJson: () -> Unit,
     onExportCsv: () -> Unit,
     onImport: () -> Unit,
@@ -73,6 +80,18 @@ fun SettingsSheet(
     var showClearConfirm by remember { mutableStateOf(false) }
     var showExportFormat by remember { mutableStateOf(false) }
     var showImportConfirm by remember { mutableStateOf(false) }
+    var languageExpanded by remember { mutableStateOf(false) }
+    var themeExpanded by remember { mutableStateOf(false) }
+    val languageLabel = when (currentLanguage) {
+        AppLanguage.System -> stringResource(R.string.language_system)
+        AppLanguage.English -> "English"
+        AppLanguage.Russian -> "Русский"
+    }
+    val themeLabel = when (currentTheme) {
+        AppThemeMode.System -> stringResource(R.string.theme_system)
+        AppThemeMode.Light -> stringResource(R.string.theme_light)
+        AppThemeMode.Dark -> stringResource(R.string.theme_dark)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -138,28 +157,51 @@ fun SettingsSheet(
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = stringResource(R.string.language_title),
-                style = MaterialTheme.typography.titleMedium,
+            SettingsDropdown(
+                label = stringResource(R.string.language_title),
+                selected = languageLabel,
+                expanded = languageExpanded,
+                onExpandedChange = { expanded ->
+                    languageExpanded = expanded
+                    if (expanded) {
+                        themeExpanded = false
+                    }
+                },
+                options = listOf(
+                    SettingsOption(stringResource(R.string.language_system)) {
+                        onLanguageChange(AppLanguage.System)
+                    },
+                    SettingsOption("English") {
+                        onLanguageChange(AppLanguage.English)
+                    },
+                    SettingsOption("Русский") {
+                        onLanguageChange(AppLanguage.Russian)
+                    },
+                ),
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(modifier = Modifier.selectableGroup()) {
-                MealListModeRow(
-                    label = stringResource(R.string.language_system),
-                    selected = currentLanguage == AppLanguage.System,
-                    onClick = { onLanguageChange(AppLanguage.System) },
-                )
-                MealListModeRow(
-                    label = "English",
-                    selected = currentLanguage == AppLanguage.English,
-                    onClick = { onLanguageChange(AppLanguage.English) },
-                )
-                MealListModeRow(
-                    label = "Русский",
-                    selected = currentLanguage == AppLanguage.Russian,
-                    onClick = { onLanguageChange(AppLanguage.Russian) },
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingsDropdown(
+                label = stringResource(R.string.theme_title),
+                selected = themeLabel,
+                expanded = themeExpanded,
+                onExpandedChange = { expanded ->
+                    themeExpanded = expanded
+                    if (expanded) {
+                        languageExpanded = false
+                    }
+                },
+                options = listOf(
+                    SettingsOption(stringResource(R.string.theme_system)) {
+                        onThemeChange(AppThemeMode.System)
+                    },
+                    SettingsOption(stringResource(R.string.theme_light)) {
+                        onThemeChange(AppThemeMode.Light)
+                    },
+                    SettingsOption(stringResource(R.string.theme_dark)) {
+                        onThemeChange(AppThemeMode.Dark)
+                    },
+                ),
+            )
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
                 onClick = { showExportFormat = true },
@@ -265,6 +307,60 @@ fun SettingsSheet(
                 windowField = null
             },
         )
+    }
+}
+
+private class SettingsOption(
+    val label: String,
+    val onSelect: () -> Unit,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsDropdown(
+    label: String,
+    selected: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    options: List<SettingsOption>,
+) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            for (option in options) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    onClick = {
+                        onExpandedChange(false)
+                        option.onSelect()
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                )
+            }
+        }
     }
 }
 

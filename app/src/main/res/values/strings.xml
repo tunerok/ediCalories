@@ -55,6 +55,10 @@
     <string name="invalid_meal_windows">Breakfast, lunch and dinner must start in that order</string>
     <string name="language_title">Language</string>
     <string name="language_system">System default</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="weight_for_date">Weight for %1$s</string>
     <string name="current_weight">Current: %1$s kg</string>
     <string name="card_weight">Weight %1$s kg</string>
@@ -74,7 +78,7 @@
     <string name="chart_goal">Goal</string>
     <string name="clear_data">Clear data</string>
     <string name="clear_data_title">Clear logged data?</string>
-    <string name="clear_data_message">This will delete all meals (calories and times) and all weight records. The daily calorie goal, meal windows and language will stay. This cannot be undone.</string>
+    <string name="clear_data_message">This will delete all meals (calories and times) and all weight records. The daily calorie goal, meal windows, language and theme will stay. This cannot be undone.</string>
     <string name="clear_data_confirm">Yes, clear</string>
     <string name="journal_cleared">Logged data cleared</string>
     <string name="export_data">Export</string>
@@ -83,7 +87,7 @@
     <string name="export_format_csv">CSV</string>
     <string name="import_data">Import</string>
     <string name="import_data_title">Import data?</string>
-    <string name="import_data_message">Meals will be added as new records. Importing the same file again will create duplicates. Weight for a day already in the journal will be replaced. Daily calorie goal and meal windows will be taken from the file. Language will stay. Only the EdiCalories file format is accepted.</string>
+    <string name="import_data_message">Meals will be added as new records. Importing the same file again will create duplicates. Weight for a day already in the journal will be replaced. Daily calorie goal and meal windows will be taken from the file. Language and theme will stay. Only the EdiCalories file format is accepted.</string>
     <string name="import_data_confirm">Import</string>
     <string name="journal_exported">Exported</string>
     <string name="journal_imported">Imported</string>

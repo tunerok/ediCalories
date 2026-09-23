@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.MealSchedule
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +41,17 @@ class PreferencesRepository(context: Context) {
         return mealSchedule.first()
     }
 
+    suspend fun currentThemeMode(): AppThemeMode {
+        val stored = dataStore.data.first()[THEME_MODE_KEY]
+        return AppThemeMode.fromStorage(stored)
+    }
+
+    suspend fun setThemeMode(mode: AppThemeMode) {
+        dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = mode.storageValue
+        }
+    }
+
     suspend fun setDailyGoalAndSchedule(goal: Int, schedule: MealSchedule) {
         require(goal in CalorieBalance.MIN_DAILY_GOAL..CalorieBalance.MAX_DAILY_GOAL)
         if (schedule.groupingEnabled) {
@@ -59,5 +72,6 @@ class PreferencesRepository(context: Context) {
         val BREAKFAST_START_KEY = intPreferencesKey("breakfast_start_minutes")
         val LUNCH_START_KEY = intPreferencesKey("lunch_start_minutes")
         val DINNER_START_KEY = intPreferencesKey("dinner_start_minutes")
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
     }
 }

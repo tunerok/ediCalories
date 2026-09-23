@@ -11,6 +11,7 @@ import com.example.edicalories.data.Meal
 import com.example.edicalories.data.MealRepository
 import com.example.edicalories.data.PreferencesRepository
 import com.example.edicalories.data.WeightRepository
+import com.example.edicalories.domain.AppThemeMode
 import com.example.edicalories.domain.BodyWeight
 import com.example.edicalories.domain.CalorieBalance
 import com.example.edicalories.domain.ChartPeriod
@@ -402,6 +403,22 @@ class TodayViewModel(
             meals = meals,
             weights = weights,
         )
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        if (mode == AppThemeMode.current()) {
+            return
+        }
+        viewModelScope.launch {
+            val saved = runCatching {
+                preferencesRepository.setThemeMode(mode)
+            }.isSuccess
+            if (!saved) {
+                emitMessage(UserMessage.WriteError)
+                return@launch
+            }
+            AppThemeMode.apply(mode)
+        }
     }
 
     fun saveSettings(goalRaw: String, schedule: MealSchedule) {

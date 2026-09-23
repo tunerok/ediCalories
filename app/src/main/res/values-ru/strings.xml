@@ -55,6 +55,10 @@
     <string name="invalid_meal_windows">Завтрак, обед и ужин должны начинаться в этом порядке</string>
     <string name="language_title">Язык</string>
     <string name="language_system">Как в системе</string>
+    <string name="theme_title">Тема</string>
+    <string name="theme_system">Как в системе</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
     <string name="weight_for_date">Вес за %1$s</string>
     <string name="current_weight">Сейчас: %1$s кг</string>
     <string name="card_weight">Вес %1$s кг</string>
@@ -74,7 +78,7 @@
     <string name="chart_goal">Норма</string>
     <string name="clear_data">Очистить</string>
     <string name="clear_data_title">Очистить записанные данные?</string>
-    <string name="clear_data_message">Будут удалены все приёмы пищи (калории и время) и все записи веса. Дневная норма калорий, окна приёмов и язык останутся. Это действие нельзя отменить.</string>
+    <string name="clear_data_message">Будут удалены все приёмы пищи (калории и время) и все записи веса. Дневная норма калорий, окна приёмов, язык и тема останутся. Это действие нельзя отменить.</string>
     <string name="clear_data_confirm">Да, очистить</string>
     <string name="journal_cleared">Записанные данные удалены</string>
     <string name="export_data">Экспорт</string>
@@ -83,7 +87,7 @@
     <string name="export_format_csv">CSV</string>
     <string name="import_data">Импорт</string>
     <string name="import_data_title">Импортировать данные?</string>
-    <string name="import_data_message">Приёмы пищи будут добавлены как новые записи. Повторный импорт того же файла создаст копии. Вес за уже существующий день будет заменён. Дневная норма и окна приёмов возьмутся из файла. Язык останется. Принимается только файл формата EdiCalories.</string>
+    <string name="import_data_message">Приёмы пищи будут добавлены как новые записи. Повторный импорт того же файла создаст копии. Вес за уже существующий день будет заменён. Дневная норма и окна приёмов возьмутся из файла. Язык и тема останутся. Принимается только файл формата EdiCalories.</string>
     <string name="import_data_confirm">Импортировать</string>
     <string name="journal_exported">Экспортировано</string>
     <string name="journal_imported">Импортировано</string>
